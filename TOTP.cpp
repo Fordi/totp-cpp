@@ -59,16 +59,16 @@ std::optional<TOTP> TOTP::from_url(const std::string& url) {
   TOTP totp;
 
   std::regex url_regex (
-    R"(^otpauth://totp/([^:]+):([^?]+)\?(.*)$)",
+    R"(^otpauth://totp/([^:]+)(:([^?]*))?\?(.*)$)",
     std::regex::extended
   );
   std::smatch url_match_result;
 
   if (std::regex_match(url, url_match_result, url_regex)) {
-    totp.org = url_decode(url_match_result[1]);
-    totp.account = url_decode(url_match_result[2]);
+    totp.label = url_decode(url_match_result[1]);
+    totp.account = url_decode(url_match_result[3]);
 
-    std::string query = url_match_result[3];
+    std::string query = url_match_result[4];
     if (!query.empty()) {
       std::regex param_regex(R"(([^&=]+)=([^&]*))");
       auto params_begin = std::sregex_iterator(query.begin(), query.end(), param_regex);
@@ -76,17 +76,23 @@ std::optional<TOTP> TOTP::from_url(const std::string& url) {
       for (auto it = params_begin; it != params_end; ++it) {
         std::string key = url_decode((*it)[1]);
         std::string value = url_decode((*it)[2]);
-        if (key == "secret")    totp.secret    = base32_decode(value);
-        else if (key == "algorithm") totp.algorithm = value;
-        else if (key == "digits")    totp.digits    = std::stoi(value);
-        else if (key == "period")    totp.period    = std::stoi(value);
+        if (key == "secret") {
+          totp.secret = base32_decode(value);
+        } else if (key == "algorithm") {
+          totp.algorithm = value;
+        } else if (key == "digits") {
+          totp.digits = std::stoi(value);
+        } else if (key == "period") {
+          totp.period = std::stoi(value);
+        } else if (key == "issuer") {
+          totp.issuer    = value;
+        }
       }
     }
     if (totp.algorithm != "SHA1" && totp.algorithm != "SHA256" && totp.algorithm != "SHA512") {
       std::cerr << "Unknown algorithm: " << totp.algorithm << std::endl;
       return std::nullopt;
     }
-
   } else {
     std::cerr << "Malformed url." << std::endl;
     return std::nullopt;

@@ -15,8 +15,9 @@ class TOTP {
     int digits = 6;
     vector<uint8_t> secret;
     string algorithm = "SHA1";
-    string org;
+    string label;
     string account;
+    string issuer;
     string code();
     static optional<TOTP> from_url(const string& url);
 };
