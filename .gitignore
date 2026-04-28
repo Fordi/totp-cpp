@@ -1,3 +1,5 @@
 *.o
 example/*.o
 example/totp
+totp.js
+totp.wasm
